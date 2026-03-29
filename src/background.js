@@ -7,7 +7,7 @@ const MENU_SIMPLIFY_ID = "bridger-simplify";
 
 // Local BRIDGER Engine Cache
 const SLM_MODULES = {};
-const SLM_FILES = ['latn', 'deva', 'guru', 'taml', 'mlym', 'knda', 'beng', 'orya', 'telu', 'jpan', 'hani', 'mtei'];
+const SLM_FILES = ['latn', 'deva', 'guru', 'taml', 'mlym', 'knda', 'beng', 'orya', 'telu', 'jpan', 'hani', 'mtei', 'arab'];
 
 async function loadLocalModules() {
   for (const mod of SLM_FILES) {
@@ -26,6 +26,7 @@ loadLocalModules();
 
 // Fast SLM script detector
 function detectScript(word) {
+  if (/[\u0600-\u06FF]/.test(word)) return 'arab';
   if (/[\u0900-\u097F]/.test(word)) return 'deva';
   if (/[\u0980-\u09FF]/.test(word)) return 'beng';
   if (/[\u0A00-\u0A7F]/.test(word)) return 'guru';
@@ -44,7 +45,7 @@ function detectScript(word) {
 // Local SLM replacement mapping matching existing extension styles
 function processWordLocally(word) {
   // basic stripping matching python pipeline
-  const cleanWord = word.replace(/[^\w\u0900-\u9FAF]/g, '');
+  const cleanWord = word.replace(/[^\w\u0900-\u9FAF\u0600-\u06FF]/g, '');
   if (!cleanWord) return word;
   
   const script = detectScript(cleanWord);
@@ -55,6 +56,21 @@ function processWordLocally(word) {
   
   if (script === 'latn' && mod.common_pairs && mod.common_pairs[wLower]) {
      return word.replace(cleanWord, `[COLOR:teal]${mod.common_pairs[wLower]}[/COLOR]`);
+  }
+
+  // RTL Special Handling for Arabic/Urdu to preserve ligatures
+  if (script === 'arab') {
+    let arabBadges = "";
+    const confusions = mod.visual_confusion || [];
+    for (const confArray of confusions) {
+      for (const char of confArray) {
+        if (word.includes(char)) {
+          // Add a help badge for each target character found
+          arabBadges += `\u200F[KEY:${char}]`;
+        }
+      }
+    }
+    return arabBadges ? `${arabBadges}${word}` : word;
   }
   
   let temp = word;
@@ -101,12 +117,12 @@ function processWordLocally(word) {
 
 function runLocalSLM(text) {
   // Better Unicode-aware word splitting isolating punctuation correctly!
-  const regex = /([\w\u0900-\u9FAF]+|[\s]+|[^\w\s\u0900-\u9FAF]+)/g;
+  const regex = /([\w\u0900-\u9FAF\u0600-\u06FF]+|[\s]+|[^\w\s\u0900-\u9FAF\u0600-\u06FF]+)/g;
   const tokens = text.match(regex) || [text];
   let changedAny = false;
   
   const processed = tokens.map(token => {
-     if (!token.trim() || token.match(/^[^\w\u0900-\u9FAF]+$/)) return token; // Skip spaces and pure punctuation
+     if (!token.trim() || token.match(/^[^\w\u0900-\u9FAF\u0600-\u06FF]+$/)) return token; // Skip spaces and pure punctuation
      const newWord = processWordLocally(token);
      if (newWord !== token) changedAny = true;
      return newWord;

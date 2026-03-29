@@ -8,8 +8,9 @@ Bridger utilizes a hybrid-compute pipeline seamlessly merging a fast `<O(1)` loc
 
 We currently support structural adjustments for the following scripts and languages out of the box:
 
+- **Middle East (RTL)**: Arabic, Urdu
 - **European (Latin)**: English, French, German, Spanish
-- **Deccan & Eastern**: Bengali (Bangla), Odia, Telugu
+- **Deccan & Eastern**: Bengali (Bangla & Assamese), Odia, Telugu, Meitei Mayek (Manipuri)
 - **Dravidian**: Tamil, Malayalam, Kannada
 - **North Indian**: Devanagari (Hindi, Marathi, Gujarati) & Gurmukhi (Punjabi)
 - **East Asian**: Japanese (Kana/Kanji) & Chinese (Hanzi Radicals)
