@@ -7,7 +7,7 @@ const MENU_SIMPLIFY_ID = "bridger-simplify";
 
 // Local BRIDGER Engine Cache
 const SLM_MODULES = {};
-const SLM_FILES = ['latn', 'deva', 'guru', 'taml', 'mlym', 'knda', 'beng', 'orya', 'telu', 'jpan', 'hani'];
+const SLM_FILES = ['latn', 'deva', 'guru', 'taml', 'mlym', 'knda', 'beng', 'orya', 'telu', 'jpan', 'hani', 'mtei'];
 
 async function loadLocalModules() {
   for (const mod of SLM_FILES) {
@@ -34,6 +34,7 @@ function detectScript(word) {
   if (/[\u0C00-\u0C7F]/.test(word)) return 'telu';
   if (/[\u0C80-\u0CFF]/.test(word)) return 'knda';
   if (/[\u0D00-\u0D7F]/.test(word)) return 'mlym';
+  if (/[\uABC0-\uABFF]/.test(word)) return 'mtei';
   if (/[\u3040-\u30FF]/.test(word)) return 'jpan';
   if (/[\u4E00-\u9FAF]/.test(word)) return 'hani';
   if (/[a-zA-Z\u00C0-\u017F]/.test(word)) return 'latn';
