@@ -5,6 +5,115 @@ const MENU_TOGGLE_VIEW_ID = "bridger-toggle-view";
 const MENU_AUTO_SIMPLIFY_ID = "bridger-auto-simplify";
 const MENU_SIMPLIFY_ID = "bridger-simplify";
 
+// Local BRIDGER Engine Cache
+const SLM_MODULES = {};
+const SLM_FILES = ['latn', 'deva', 'guru', 'taml', 'mlym', 'knda', 'beng', 'orya', 'telu', 'jpan', 'hani'];
+
+async function loadLocalModules() {
+  for (const mod of SLM_FILES) {
+    try {
+      const url = chrome.runtime.getURL(`src/${mod}_module.json`);
+      const res = await fetch(url);
+      if (res.ok) {
+        SLM_MODULES[mod] = await res.json();
+      }
+    } catch (e) {
+      console.warn(`Bridger SLM: Could not load ${mod} - ${e.message}`);
+    }
+  }
+}
+loadLocalModules();
+
+// Fast SLM script detector
+function detectScript(word) {
+  if (/[\u0900-\u097F]/.test(word)) return 'deva';
+  if (/[\u0980-\u09FF]/.test(word)) return 'beng';
+  if (/[\u0A00-\u0A7F]/.test(word)) return 'guru';
+  if (/[\u0B00-\u0B7F]/.test(word)) return 'orya';
+  if (/[\u0B80-\u0BFF]/.test(word)) return 'taml';
+  if (/[\u0C00-\u0C7F]/.test(word)) return 'telu';
+  if (/[\u0C80-\u0CFF]/.test(word)) return 'knda';
+  if (/[\u0D00-\u0D7F]/.test(word)) return 'mlym';
+  if (/[\u3040-\u30FF]/.test(word)) return 'jpan';
+  if (/[\u4E00-\u9FAF]/.test(word)) return 'hani';
+  if (/[a-zA-Z\u00C0-\u017F]/.test(word)) return 'latn';
+  return null;
+}
+
+// Local SLM replacement mapping matching existing extension styles
+function processWordLocally(word) {
+  // basic stripping matching python pipeline
+  const cleanWord = word.replace(/[^\w\u0900-\u9FAF]/g, '');
+  if (!cleanWord) return word;
+  
+  const script = detectScript(cleanWord);
+  if (!script || !SLM_MODULES[script]) return word;
+  
+  const mod = SLM_MODULES[script];
+  const wLower = cleanWord.toLowerCase();
+  
+  if (script === 'latn' && mod.common_pairs && mod.common_pairs[wLower]) {
+     return word.replace(cleanWord, `[COLOR:teal]${mod.common_pairs[wLower]}[/COLOR]`);
+  }
+  
+  let temp = word;
+  let changed = false;
+
+  // Generic Circular / Visual Confusion formatting
+  const confusions = mod.visual_confusion || mod.kannada_confusions || mod.confusion_triplets || mod.circular_overlaps || mod.naveen_groups || [];
+  for (const confArray of confusions) {
+     for (const char of confArray) {
+        // Simple replace avoiding double-wrapping logic issues by isolating specific hits
+        if (temp.includes(char) && !temp.includes(`[COLOR`)) {
+           temp = temp.replaceAll(char, `[COLOR:rose]${char}[/COLOR]`);
+           changed = true;
+        }
+     }
+  }
+
+  // Highlight complex loops/ottus
+  const complex = mod.complex_ottu || mod.difficult_vattulu || mod.juktakkhors || mod.phala_triggers || mod.difficult_ottulu || mod.complex_conjuncts || [];
+  for (const comp of complex) {
+     if (temp.includes(comp) && !temp.includes(`[COLOR`)) {
+        temp = temp.replaceAll(comp, `[COLOR:sky]${comp}[/COLOR]`);
+        changed = true;
+     }
+  }
+
+  if (script === 'hani' && mod.decompositions) {
+     let haniTemp = "";
+     let haniChanged = false;
+     for (const char of word) {
+        if (mod.decompositions[char]) {
+           haniTemp += `[KEY:${mod.decompositions[char]}][COLOR:gold]${char}[/COLOR]`;
+           haniChanged = true;
+        } else {
+           haniTemp += char;
+        }
+     }
+     if (haniChanged) return haniTemp;
+  }
+  
+  if (changed) return temp;
+  return word;
+}
+
+function runLocalSLM(text) {
+  // Better Unicode-aware word splitting isolating punctuation correctly!
+  const regex = /([\w\u0900-\u9FAF]+|[\s]+|[^\w\s\u0900-\u9FAF]+)/g;
+  const tokens = text.match(regex) || [text];
+  let changedAny = false;
+  
+  const processed = tokens.map(token => {
+     if (!token.trim() || token.match(/^[^\w\u0900-\u9FAF]+$/)) return token; // Skip spaces and pure punctuation
+     const newWord = processWordLocally(token);
+     if (newWord !== token) changedAny = true;
+     return newWord;
+  });
+  
+  return { modifiedText: processed.join(""), hitLocalRules: changedAny };
+}
+
 function buildPrompt(text) {
   return [
     "You are Bridger, a text accessibility assistant for dyslexia and ADHD.",
@@ -96,8 +205,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const stored = await chrome.storage.local.get({ model: DEFAULT_MODEL });
       const model = stored.model || DEFAULT_MODEL;
       const text = String(message.text || "");
-      const output = await callOllama(text, model);
-      const finalText = shouldFallbackToOriginal(text, output) ? text : output;
+      
+      let finalText = text;
+      const slmResult = runLocalSLM(text);
+      
+      if (slmResult.hitLocalRules) {
+         // Local SLM natively hit, bypassing generative Ollama rewrite for stability
+         finalText = slmResult.modifiedText;
+      } else {
+         // Fallback to intensive generative rewrite
+         const output = await callOllama(text, model);
+         finalText = shouldFallbackToOriginal(text, output) ? text : output;
+      }
+      
       sendResponse({ ok: true, text: finalText });
     } catch (error) {
       sendResponse({ ok: false, error: error?.message || "Ollama unavailable" });

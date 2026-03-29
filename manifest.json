@@ -19,5 +19,11 @@
       "css": ["src/styles.css"],
       "run_at": "document_idle"
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/*_module.json"],
+      "matches": ["<all_urls>"]
+    }
   ]
 }

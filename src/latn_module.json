@@ -1,0 +1,75 @@
+{
+  "meta": {
+    "name": "Latin (EU)",
+    "type": "Visual/Phonetic European Confusions"
+  },
+  "common_pairs": {
+    "teh": "the",
+    "recieve": "receive",
+    "accommodate": "accommodate",
+    "alot": "a lot",
+    "definitely": "definitely",
+    "seperate": "separate",
+    "wierd": "weird",
+    "acheive": "achieve",
+    "arguement": "argument",
+    "acceuil": "accueil",
+    "appeler": "appeler",
+    "beaucoup": "beaucoup",
+    "dass": "daß",
+    "das": "dass"
+  },
+  "visual_confusion": [
+    [
+      "ie",
+      "ei"
+    ],
+    [
+      "ss",
+      "ß"
+    ],
+    [
+      "v",
+      "w"
+    ],
+    [
+      "ch",
+      "sch"
+    ],
+    [
+      "é",
+      "è",
+      "ê"
+    ],
+    [
+      "eau",
+      "au"
+    ],
+    [
+      "ent",
+      "ant"
+    ],
+    [
+      "qu",
+      "k",
+      "c"
+    ],
+    [
+      "ll",
+      "y"
+    ],
+    [
+      "b",
+      "v"
+    ],
+    [
+      "ñ",
+      "n"
+    ],
+    [
+      "c",
+      "s",
+      "z"
+    ]
+  ]
+}

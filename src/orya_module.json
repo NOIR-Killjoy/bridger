@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "name": "Odia",
+    "type": "Circular Similarities"
+  },
+  "visual_confusion": [
+    [
+      "କ",
+      "କ୍କ"
+    ],
+    [
+      "ଢ",
+      "ଢ଼"
+    ],
+    [
+      "ବ",
+      "ଵ"
+    ],
+    [
+      "ଶ",
+      "ଷ",
+      "ସ"
+    ]
+  ],
+  "phala_triggers": [
+    "୍ୟ",
+    "୍ର",
+    "୍ଵ",
+    "୍ମ"
+  ]
+}
